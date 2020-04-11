@@ -1,0 +1,39 @@
+{
+  "privilegedUserMap": {
+    "asidOwner": "14-2710-1"
+  },
+  "asid": "11111111111111111111111111111111",
+  "sysAppWorkspace": {
+    "awid": "22222222222222222222222222222222",
+    "awidOwner": "14-2710-1",
+    "licenseOwner": {
+      "organization": {
+        "name": "Test Organization",
+        "oId": "ORG_OID",
+        "web": "www.test-organization.com"
+      },
+      "userList": [
+        {
+          "uuIdentity": "14-2710-1",
+          "name": "Test User"
+        }
+      ]
+    }
+  },
+  "userMap": {
+    "AsidOwner": {
+      "accessCode1": "3yMhD1qzi0JUwsAJ7UOsWX2YtrGH_Olk5DxgWyssNW6e_WC4wjKrXODHES92cQXp",
+      "accessCode2": "Cq%iaz#9w-#z7C8yZlZoC$DsebIK2JGWyDK8lg8J7vLFSKXtYFt5tn3eI3WthZtI",
+      "uuIdentity": "14-2710-1"
+    },
+    "AwidOwner": {
+      "accessCode1": "3yMhD1qzi0JUwsAJ7UOsWX2YtrGH_Olk5DxgWyssNW6e_WC4wjKrXODHES92cQXp",
+      "accessCode2": "Cq%iaz#9w-#z7C8yZlZoC$DsebIK2JGWyDK8lg8J7vLFSKXtYFt5tn3eI3WthZtI",
+      "uuIdentity": "14-2710-1",
+      "profileList": ["Authorities", "Executives"]
+    }
+  },
+  "log_level": "FATAL",
+  "uuapp.appserver.monitoring.accesslog.log_level": "OFF",
+  "uuapp.perflog.logger.log_level": "OFF"
+}

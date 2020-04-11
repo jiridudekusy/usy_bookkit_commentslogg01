@@ -1,0 +1,18 @@
+{
+  "product": "usy_bookkit_commentslogg01",
+  "version": "0.1.0",
+  "license": "License Commercial",
+  "description": {
+    "en": "",
+    "cs": ""
+  },
+  "usy_bookkit_commentslogg01-hi": {},
+  "usy_bookkit_commentslogg01-server": {
+    "devkit": {
+      "development": {
+        "appBoxLocationUri": "----- VALUE REQUIRED -----",
+        "appDeploymentUri": null
+      }
+    }
+  }
+}
