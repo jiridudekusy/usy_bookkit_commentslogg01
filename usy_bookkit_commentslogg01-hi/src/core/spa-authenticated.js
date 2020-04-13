@@ -1,19 +1,15 @@
 //@@viewOn:imports
-import * as UU5 from "uu5g04";
+import UU5 from "uu5g04";
 import "uu5g04-bricks";
-import * as Plus4U5 from "uu_plus4u5g01";
 import "uu_plus4u5g01-app";
 import "uu5flextilesg01";
 
 import Config from "./config/config.js";
 import Lsi from "../config/lsi.js";
-import Left from "./left.js";
-import Bottom from "./bottom.js";
-import About from "../routes/about.js";
-import Home from "../routes/home.js";
-import CommentsLog from "../routes/commentsLog";
-import CommentsThreadTest from "../routes/commentsThreadTest";
-
+import AppContext from "./app-context"
+import SpaReady from "./spa-ready";
+import Calls from "calls"
+import {CommentsDb} from "../bricks/comments-db";
 
 //@@viewOff:imports
 
@@ -52,6 +48,15 @@ const SpaAuthenticated = UU5.Common.VisualComponent.create({
   //@@viewOff:reactLifeCycle
 
   //@@viewOn:interface
+  async loadData() {
+    let configurationResponse = await Calls.getConfiguration();
+    let configuration = configurationResponse.configuration;
+    Calls.BOOKKIT_URI = configuration.bookUri;
+    let bookData = await Calls.loadBook();
+    let comments = await Calls.loadComments({active: true});
+    let commentsDb = new CommentsDb(bookData, comments);
+    return {configuration, bookData, commentsDb};
+  },
   //@@viewOff:interface
 
   //@@viewOn:overriding
@@ -63,26 +68,22 @@ const SpaAuthenticated = UU5.Common.VisualComponent.create({
   //@@viewOn:render
   render() {
     return (
-      <Plus4U5.App.Page
-        {...this.getMainPropsToPass()}
-        top={<Plus4U5.App.Top content={this.getLsiComponent("name")}/>}
-        bottom={<Bottom/>}
-        type={2}
-        displayedLanguages={["cs", "en"]}
-        left={<Left identity={this.props.identity}/>}
-        leftWidth="!xs-320px !s-320px !m-256px l-256px xl-256px"
+      <AppContext.Provider
+        onLoad={this.loadData}
+        loading={<UU5.Bricks.Loading>Loading configuration</UU5.Bricks.Loading>}
       >
-        <UU5.Common.Router
-          routes={{
-            "": "home",
-            home: {component: <Home identity={this.props.identity}/>},
-            about: {component: <About identity={this.props.identity}/>},
-            commentsLog: {component: <CommentsLog/>},
-            commentsThreadTest: {component: <CommentsThreadTest/>}
+        <AppContext.Consumer>
+          {({data, viewState, errorState, errorData}) => {
+            if (viewState === "error") {
+              return <UU5.Common.Error errorData={errorData} errorInfo={errorData}/>;
+            } else if (viewState === "ready") {
+              return <SpaReady identity={this.props.identity} bookData={data.bookData} configuration={data.configuration}/>
+            } else {
+              return <UU5.Bricks.Loading/>
+            }
           }}
-          controlled={false}
-        />
-      </Plus4U5.App.Page>
+        </AppContext.Consumer>
+      </AppContext.Provider>
     );
   }
   //@@viewOff:render

@@ -4,8 +4,8 @@
     "primary": "mongodb://127.0.0.1:27017/bookkitCommentslogPrimary"
   },
   "privilegedUserMap": {
-    "asidOwner": "14-2710-1"
+    "asidOwner": "400-1"
   },
-  "asid": "11111111111111111111111111111111",
+  "asid": "00000000000000000000000000000001",
   "log_level": "INFO"
 }

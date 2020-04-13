@@ -14,13 +14,31 @@ let Calls = {
     return Plus4U5.Common.Calls.call(method, url, dtoIn, clientOptions);
   },
 
-  loadComments(data) {
-    return new Promise((resolve, reject) => {
-      let commandUri = Calls.getCommandUri("listCommentThreads");
-      const dtoIn = {data, done: resolve, fail: reject};
-      return Calls.call("get", commandUri, dtoIn);
-    });
+  promiseCall(method, url, data, clientOptions) {
+    return new Promise((done, fail) => {
+      Calls.call(method, url, {data, done, fail}, clientOptions)
+    })
+  },
 
+  loadComments(data) {
+    return Calls.promiseCall("get",
+      Calls.getCommandUri("listCommentThreads", Calls.BOOKKIT_URI),
+      data
+    );
+  },
+
+  loadBook(data) {
+    return Calls.promiseCall("get",
+      Calls.getCommandUri("loadBook", Calls.BOOKKIT_URI),
+      data
+    );
+  },
+
+  getConfiguration(dtoInData) {
+    return Calls.promiseCall("get",
+      Calls.getCommandUri("app/getConfiguration", Calls.APP_BASE_URI),
+      dtoInData
+    )
   },
 
   /*
@@ -39,10 +57,10 @@ let Calls = {
      }
    }
    */
-  getCommandUri(aUseCase) {
+  getCommandUri(aUseCase, base) {
     // useCase <=> e.g. "getSomething" or "sys/getSomething"
     // add useCase to the application base URI
-    let targetUriStr = Calls.BOOKKIT_URI + aUseCase.replace(/^\/+/, "");
+    let targetUriStr = base + aUseCase.replace(/^\/+/, "");
 
     // override tid / awid if it's present in environment (use also its gateway in such case)
     if (process.env.NODE_ENV !== "production") {
@@ -58,13 +76,23 @@ let Calls = {
               url.port = match[3];
             }
           }
-          if (env.tid) url.tid = env.tid;
-          if (env.awid) url.awid = env.awid;
+          if (env.tid) {
+            url.tid = env.tid;
+          }
+          if (env.awid) {
+            url.awid = env.awid;
+          }
         }
         if (env.vendor || env.app) {
-          if (env.vendor) url.vendor = env.vendor;
-          if (env.app) url.app = env.app;
-          if (env.subApp) url.subApp = env.subApp;
+          if (env.vendor) {
+            url.vendor = env.vendor;
+          }
+          if (env.app) {
+            url.app = env.app;
+          }
+          if (env.subApp) {
+            url.subApp = env.subApp;
+          }
         }
         targetUriStr = url.toString();
       }

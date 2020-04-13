@@ -9,7 +9,8 @@
   },
   "devDependencies": {
     "uu_appg01_devkit": "^1.6.3",
-    "uu_appg01_server-test": "^4.6.0"
+    "uu_appg01_server-test": "^4.6.0",
+    "usy_app_supportg01-init": "^0.2.0"
   },
   "engines": {
     "node": ">=10.16.0"

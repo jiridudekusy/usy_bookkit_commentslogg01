@@ -8,10 +8,12 @@
     }
   },
   "*": {
-    "profileList": ["Authorities", "Executives", "AwidOwner"],
+    "profileList": ["Authorities", "Executives", "Auditors","AwidOwner"],
     "useCaseMap": {
       "init": ["AwidOwner"],
-      "defaultUve": ["Public"]
+      "defaultUve": ["Public"],
+      "app/setConfiguration": ["Authorities"],
+      "app/getConfiguration": ["Authorities", "Executives", "Auditors"]
     }
   }
 }
