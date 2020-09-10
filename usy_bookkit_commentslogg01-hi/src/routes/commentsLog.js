@@ -39,13 +39,14 @@ const CommentsLog = UU5.Common.VisualComponent.create({
   //@@viewOff:reactLifeCycle
 
   //@@viewOn:interface
-  async loadData(dtoIn, commentsDb) {
-
-    //FIXME: Remove this when flextilelist can correctly recalculate tile height.
-    if (dtoIn.pageInfo.pageIndex === 0) {
-      this.setState({listKey: new Date().getTime()});
-    }
-    return commentsDb.search(dtoIn);
+  loadData(dtoIn, commentsDb) {
+    return commentsDb.search(dtoIn).then((dtoOut) => {
+      //FIXME: Remove this when flextilelist can correctly recalculate tile height.
+      if (dtoIn.pageInfo.pageIndex === 0) {
+        this.setState({listKey: new Date().getTime()});
+      }
+      return dtoOut;
+    });
   },
   //@@viewOff:interface
 
@@ -60,7 +61,6 @@ const CommentsLog = UU5.Common.VisualComponent.create({
 
   //@@viewOn:render
   render() {
-    console.log(UU5.FlexTiles);
     let listKey = this.state.listKey || new Date().getTime();
     return (
       <UU5.Bricks.Div {...this.getMainPropsToPass()}>

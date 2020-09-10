@@ -1,16 +1,39 @@
 import lunr from "lunr";
 import cloneDeep from "clone-deep";
 
-export class CommentsDb {
-  constructor(bookData, comments) {
-    this.bookData = bookData;
-    this.comments = comments.itemList;
-    this.total = comments.pageInfo.total;
+const FilterTypes = {
+  FULLTEXT: "fulltext",
+  POST: "post"
+}
 
-    this._initialize();
+export class CommentsDb {
+
+  static create(bookData, comments) {
+    let res = new CommentsDb();
+    res.bookData = bookData;
+    res.comments = comments.itemList;
+    res.total = comments.pageInfo.total;
+    return new Promise((resolve, reject) => {
+      try {
+        res._initialize();
+        resolve(res);
+      } catch (e) {
+        reject(e);
+      }
+    });
   }
 
   search(dtoIn, highlightResult) {
+    return new Promise((resolve, reject) => {
+      try {
+        resolve(this._searchInternal(dtoIn, highlightResult));
+      } catch (e) {
+        reject(e);
+      }
+    })
+  }
+
+  _searchInternal(dtoIn, highlightResult) {
     let pageInfo = dtoIn.pageInfo;
 
     let dtoOut = {pageInfo};
@@ -44,19 +67,33 @@ export class CommentsDb {
     return lunrIdx;
   }
 
-  _preprocessThreads(threads){
+  _preprocessThreads(threads) {
     let processedThreads = threads
-      .map(this._preprocessThread)
-      .map(this._flattenComments)
-      .reduce((agg, thread) => [...agg, ...thread]);
-    return processedThreads;
+    .map(this._preprocessThread.bind(this));
+    this.comments = processedThreads;
+    let comments = processedThreads.map(this._flattenComments)
+    .reduce((agg, thread) => [...agg, ...thread]);
+    return comments;
   }
 
-  _preprocessThread(thread){
+  _preprocessThread(thread) {
     thread.commentList.forEach((comment) => {
-      thread.content += comment.content +"\n";
-    })
+      thread.content += comment.content + "\n";
+      comment.sys = {
+        mts: comment.mts,
+        cts: comment.cts
+      }
+      this._sysTs2Date(comment.sys);
+    });
+    this._sysTs2Date(thread.sys);
     return thread;
+  }
+
+  _sysTs2Date(sys){
+    sys.cts = new Date(sys.cts);
+    sys.ctsTime = sys.cts.getTime();
+    sys.mts = new Date(sys.mts);
+    sys.mtsTime = sys.mts.getTime()
   }
 
   _flattenComments(thread) {
@@ -73,29 +110,79 @@ export class CommentsDb {
   }
 
   _filterRecords(dtoIn) {
+    let records = this._filterRecordsFulltext(dtoIn);
+    records = this._filterRecordsPost(dtoIn, records);
+    return records;
+    // let records;
+    // let threadRecords = {};
+    // if (dtoIn.filterMap.fulltext) {
+    //   let searchResult = this.idx.search(dtoIn.filterMap.fulltext);
+    //   records = searchResult.reduce((agg, sri) => {
+    //     let res = cloneDeep(this.idMap[sri.ref]);
+    //     if (res._internal) {
+    //       let threadRecord = threadRecords[res.threadId];
+    //       if (!threadRecord) {
+    //         threadRecords[res.threadId] = {},
+    //           threadRecord = threadRecords[res.threadId]
+    //       }
+    //       res._internalSearchResult = sri;
+    //       threadRecord[res.commentId] = res;
+    //     } else {
+    //       agg.push(res);
+    //     }
+    //     return agg;
+    //   }, []);
+    // } else {
+    //   records = this.comments;
+    // }
+    //
+    // records.forEach(rec => rec._internalSearchResults = threadRecords[rec.id]);
+    // return records;
+  }
+
+  _filterRecordsPost(dtoIn, records) {
+    let filterList = Object.keys(dtoIn.filterMap)
+    .filter((filterId) => this.filters[filterId].type === FilterTypes.POST)
+    .map((filterId) => {
+      return {key: filterId, value: dtoIn.filterMap[filterId], filterFn: this.filters[filterId].filterFn}
+    });
+    if (filterList.length > 0) {
+      records = records.filter((record) => {
+        return !filterList.some((filterObject) => !filterObject.filterFn(filterObject, record))
+      });
+    }
+    return records;
+  }
+
+  _filterRecordsFulltext(dtoIn) {
+    let fulltextQuery = Object.keys(dtoIn.filterMap)
+    .filter((filterId) => this.filters[filterId].type === FilterTypes.FULLTEXT)
+    .map((filterId) => this.filters[filterId].createQuery({key: filterId, value: dtoIn.filterMap[filterId]}))
+    .join(" ");
     let records;
     let threadRecords = {};
-    if (dtoIn.filterMap.fulltext) {
-      let searchResult = this.idx.search(dtoIn.filterMap.fulltext);
+    if (fulltextQuery) {
+      let searchResult = this.idx.search(fulltextQuery);
       records = searchResult.reduce((agg, sri) => {
         let res = cloneDeep(this.idMap[sri.ref]);
-        if(res._internal){
+        if (res._internal) {
           let threadRecord = threadRecords[res.threadId];
-          if(!threadRecord){
+          if (!threadRecord) {
             threadRecords[res.threadId] = {},
-            threadRecord = threadRecords[res.threadId]
+              threadRecord = threadRecords[res.threadId]
           }
           res._internalSearchResult = sri;
           threadRecord[res.commentId] = res;
-        }else{
+        } else {
           agg.push(res);
         }
         return agg;
       }, []);
     } else {
-      records = this.comments;
+      records = this.comments.map(cloneDeep);
     }
-    records.forEach(rec => rec._internalSearchResults= threadRecords[rec.id]);
+
+    records.forEach(rec => rec._internalSearchResults = threadRecords[rec.id]);
     return records;
   }
 
@@ -103,9 +190,10 @@ export class CommentsDb {
     let resData = data.slice(dtoIn.pageInfo.pageIndex * dtoIn.pageInfo.pageSize, (dtoIn.pageInfo.pageIndex + 1) * dtoIn.pageInfo.pageSize);
     return resData;
   }
+
   _highlightSearchResults(threads) {
-    threads.forEach((thread)=>thread.commentList.forEach((comment)=> {
-      if(thread._internalSearchResults && thread._internalSearchResults[comment.id]){
+    threads.forEach((thread) => thread.commentList.forEach((comment) => {
+      if (thread._internalSearchResults && thread._internalSearchResults[comment.id]) {
         this._highlightSearchResultsDocument(comment, thread._internalSearchResults[comment.id]._internalSearchResult)
       }
     }))
@@ -134,4 +222,28 @@ export class CommentsDb {
       document.content = document.content.replace(new RegExp(re, "s"), replacement);
     }
   }
+
+  filters = {
+    fulltext: {
+      type: FilterTypes.FULLTEXT,
+      createQuery: (filter) => filter.value,
+    },
+    created: {
+      type: FilterTypes.POST,
+      filterFn: (filter, comment) => this.filterDateTimeRange(filter, comment.sys.ctsTime)
+    },
+    modified: {
+      type: FilterTypes.POST,
+      filterFn: (filter, comment) => this.commentsFilter(filter, comment, (filter, comment)=>this.filterDateTimeRange(filter, comment.sys.mtsTime))
+    }
+  }
+
+  filterDateTimeRange(filter, date) {
+    return date >= filter.value[0].getTime() && date < filter.value[1].getTime();
+  }
+
+  commentsFilter(filter, thread, filterFn) {
+    return thread.commentList.some((comment) => filterFn(filter, comment))
+  }
+
 }

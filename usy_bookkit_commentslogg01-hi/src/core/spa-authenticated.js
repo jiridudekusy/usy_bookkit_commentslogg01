@@ -54,7 +54,7 @@ const SpaAuthenticated = UU5.Common.VisualComponent.create({
     Calls.BOOKKIT_URI = configuration.bookUri;
     let bookData = await Calls.loadBook();
     let comments = await Calls.loadComments({active: true});
-    let commentsDb = new CommentsDb(bookData, comments);
+    let commentsDb = await CommentsDb.create(bookData, comments);
     return {configuration, bookData, commentsDb};
   },
   //@@viewOff:interface

@@ -1,7 +1,10 @@
 import UU5 from "uu5g04";
 import "uu5g04-forms";
 import "uu_bookkit_uu5libg01-review"
-//UuBookKit.Review
+import FilterRenderUtils from "../../bricks/helpers/FilterRenderUtils";
+import CommentsLsi from "../../lsi/routes/comments-lsi";
+
+const css = UU5.Common.Css.css;
 
 const commentsLogUcSettings = {
   columns: [
@@ -9,7 +12,7 @@ const commentsLogUcSettings = {
       id: "name",
       headers: [
         {
-          label: "Name"
+          label: CommentsLsi.columns.comment
         }
       ],
       cellComponent: (commentThread) => {
@@ -17,7 +20,7 @@ const commentsLogUcSettings = {
         commentThread.comments = commentThread.commentList;
         return <UuBookKit.Review.CommentThread {...commentThread}/>
       },
-      tileComponent: ({ name })=> {
+      tileComponent: ({name}) => {
         return (
           <UU5.Common.Fragment>
             <div>
@@ -35,8 +38,18 @@ const commentsLogUcSettings = {
   filters: [
     {
       key: "fulltext",
-      label: "Fulltext",
+      label: CommentsLsi.filters.fulltext,
       component: <UU5.Forms.Text/>
+    },
+    {
+      key: "created",
+      label: CommentsLsi.filters.created,
+      ...FilterRenderUtils.renderDateTimeRangePicker()
+    },
+    {
+      key: "modified",
+      label: CommentsLsi.filters.modified,
+      ...FilterRenderUtils.renderDateTimeRangePicker()
     }
   ]
 };
